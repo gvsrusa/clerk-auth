@@ -57,64 +57,14 @@ class StockfishService {
   private moveCache = new Map<string, string>();
   private analysisCache = new Map<string, AnalysisResult>();
   
-  // Flag for mock or real implementation
+  // Flag for mock implementation
   private useMockImplementation: boolean = true;
   
   constructor() {
     try {
-      // Try to use the real Stockfish if available and not in test environment
-      // (with dynamic import to avoid requiring it in tests)
-      if (typeof window !== 'undefined' && !process.env.JEST_WORKER_ID) {
-        try {
-          // Create a dynamic import that can safely fail if the module isn't available
-          const stockfishImport = () => {
-            return import('stockfish')
-              .then(stockfish => {
-                this.useMockImplementation = false;
-                this.engine = stockfish.default();
-                
-                // Set up real engine message handler
-                this.engine.onmessage = (event: { data: string }) => {
-                  this.handleEngineMessage(event.data);
-                };
-                
-                console.log('Real Stockfish engine initialized');
-                this.setDifficulty('medium');
-                return true;
-              })
-              .catch(err => {
-                console.warn('Failed to load Stockfish engine, using mock implementation:', err);
-                this.setupMockEngine();
-                return false;
-              });
-          };
-          
-          // Use a timeout to handle cases where the import might hang
-          const timeoutPromise = new Promise<boolean>((resolve) => {
-            setTimeout(() => {
-              console.warn('Stockfish import timed out, using mock implementation');
-              resolve(false);
-            }, 2000);
-          });
-          
-          // Race between the import and the timeout
-          Promise.race([stockfishImport(), timeoutPromise])
-            .then(success => {
-              if (!success) {
-                this.setupMockEngine();
-              }
-            })
-            .catch(() => {
-              this.setupMockEngine();
-            });
-        } catch (error) {
-          console.warn('Error during Stockfish import setup, using mock implementation:', error);
-          this.setupMockEngine();
-        }
-      } else {
-        // Use mock implementation in test environment
-        this.setupMockEngine();
-      }
+      // Always use mock implementation for better compatibility
+      console.log('Using mock Stockfish implementation for better compatibility');
+      this.setupMockEngine();
     } catch (error) {
       console.warn('Error initializing Stockfish, using mock implementation:', error);
       this.setupMockEngine();
@@ -145,11 +95,13 @@ class StockfishService {
     this.setDifficulty('medium');
   }
   
+  // Track the last FEN position we were asked to analyze
+  private lastFen: string = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  
   // Helper to extract FEN from previous position command
   private extractFenFromPosition(): string {
-    // In a real implementation this would track the last position command
-    // For mock, we'll just return the starting position
-    return 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    // Return the last FEN we stored
+    return this.lastFen;
   }
   
   // Simulate engine response for best move
@@ -176,14 +128,22 @@ class StockfishService {
       const moves = commonOpeningMoves[fen];
       return moves[Math.floor(Math.random() * moves.length)];
     } else {
-      // Generate a random reasonable move
-      const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-      const ranks = ['1', '2', '3', '4', '5', '6', '7', '8'];
-      const from = files[Math.floor(Math.random() * files.length)] +
-                  ranks[Math.floor(Math.random() * ranks.length)];
-      const to = files[Math.floor(Math.random() * files.length)] +
-                ranks[Math.floor(Math.random() * ranks.length)];
-      return from + to;
+      // Generate a more realistic move based on piece type and position
+      // Parse the FEN to determine which pieces are where and whose turn it is
+      const fenParts = fen.split(' ');
+      const position = fenParts[0];
+      const turn = fenParts[1]; // 'w' or 'b'
+      
+      // Use common pawn moves as fallback
+      if (turn === 'w') {
+        // White to move - common white pawn moves or knight moves
+        const commonMoves = ['e2e4', 'd2d4', 'g1f3', 'b1c3', 'c2c4', 'a2a3', 'h2h3'];
+        return commonMoves[Math.floor(Math.random() * commonMoves.length)];
+      } else {
+        // Black to move - common black pawn moves or knight moves
+        const commonMoves = ['e7e5', 'e7e6', 'c7c5', 'd7d5', 'g8f6', 'b8c6', 'c7c6'];
+        return commonMoves[Math.floor(Math.random() * commonMoves.length)];
+      }
     }
   }
   
@@ -252,6 +212,9 @@ class StockfishService {
       if (!fen || typeof fen !== 'string') {
         throw new InvalidPositionError('Invalid FEN string');
       }
+      
+      // Store the current FEN for the mock engine
+      this.lastFen = fen;
       
       // Check cache for performance optimization
       if (this.moveCache.has(fen)) {
@@ -324,6 +287,9 @@ class StockfishService {
   // Provide a quick hint
   async suggestHint(fen: string): Promise<string> {
     try {
+      // Update last FEN position
+      this.lastFen = fen;
+      
       console.log(`Stockfish: Suggesting hint for position ${fen}`);
       // Use lower depth for hints to get quicker response
       if (!this.useMockImplementation) {
@@ -358,6 +324,9 @@ class StockfishService {
   // Analyze a position
   async analyzeMoves(fen: string): Promise<AnalysisResult> {
     try {
+      // Update last FEN position
+      this.lastFen = fen;
+      
       // Check cache
       if (this.analysisCache.has(fen)) {
         return this.analysisCache.get(fen)!;

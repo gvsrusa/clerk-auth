@@ -298,7 +298,7 @@ export default function GamePage() {
       const piece = chessInstance.get(squareName);
       if (piece) {
         pieceChar = piece.type.toUpperCase();
-        pieceColor = piece.color === 'w' ? 'text-white' : 'text-black';
+        pieceColor = piece.color === 'w' ? 'text-[var(--chess-white-piece)]' : 'text-[var(--chess-black-piece)]';
       }
     }
     
@@ -306,12 +306,12 @@ export default function GamePage() {
     const pieceSymbol = pieceChar ? getPieceSymbol(pieceChar, pieceColor === 'text-white') : '';
     
     // Determine the square's CSS classes
-    let squareClasses = isLightSquare ? 'bg-amber-200' : 'bg-amber-800';
+    let squareClasses = isLightSquare ? 'bg-[var(--chess-light-square)]' : 'bg-[var(--chess-dark-square)]';
     
     if (isSelected) {
-      squareClasses += ' ring-2 ring-inset ring-blue-500';
+      squareClasses += ' ring-2 ring-inset ring-[var(--chess-selected)]';
     } else if (isPossibleMove) {
-      squareClasses += ' ring-2 ring-inset ring-green-500';
+      squareClasses += ' ring-2 ring-inset ring-[var(--chess-legal-move)]';
     }
     
     return (
@@ -352,7 +352,7 @@ export default function GamePage() {
       <div className="p-6">
         <h1 className="text-3xl font-bold mb-4">Multiplayer Chess</h1>
         <p className="mb-4">You must be signed in to access this game.</p>
-        <a href="/sign-in" className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
+        <a href="/sign-in" className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-2 px-4 rounded">
           Sign In
         </a>
       </div>
@@ -364,12 +364,12 @@ export default function GamePage() {
     return (
       <div className="p-6">
         <h1 className="text-3xl font-bold mb-4">Error</h1>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-[var(--color-red-100)] border border-[var(--color-red-400)] text-[var(--color-red-700)] px-4 py-3 rounded mb-4">
           {error}
         </div>
         <button
           onClick={handleReturnToLobby}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-2 px-4 rounded"
         >
           Return to Lobby
         </button>
@@ -383,12 +383,12 @@ export default function GamePage() {
       <div className="p-6">
         <h1 className="text-3xl font-bold mb-4">Waiting for Opponent</h1>
         <p className="mb-4">Share this game ID with your friend: <span className="font-bold">{gameId}</span></p>
-        <div className="mb-6 bg-yellow-50 p-4 rounded border border-yellow-200">
+        <div className="mb-6 bg-[var(--notification-bg)] p-4 rounded border border-[var(--notification-border)]">
           <p>This game will start once another player joins.</p>
         </div>
         <button
           onClick={handleReturnToLobby}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-2 px-4 rounded"
         >
           Return to Lobby
         </button>
@@ -402,32 +402,32 @@ export default function GamePage() {
       
       {/* Game information */}
       <div className="mb-6 grid grid-cols-2 gap-4">
-        <div className="bg-white shadow rounded p-4">
+        <div className="bg-[var(--ui-card-bg)] shadow rounded p-4">
           <h2 className="text-lg font-semibold mb-2">Game Status</h2>
           {gameOver ? (
-            <div className="font-bold text-lg text-blue-600">{gameResult}</div>
+            <div className="font-bold text-lg text-[var(--status-info)]">{gameResult}</div>
           ) : (
-            <div className={`font-bold text-lg ${isMyTurn ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`font-bold text-lg ${isMyTurn ? 'text-[var(--status-success)]' : 'text-[var(--status-danger)]'}`}>
               {isMyTurn ? "Your Turn" : "Opponent's Turn"}
             </div>
           )}
         </div>
         
-        <div className="bg-white shadow rounded p-4">
+        <div className="bg-[var(--ui-card-bg)] shadow rounded p-4">
           <h2 className="text-lg font-semibold mb-2">Players</h2>
           <div className="space-y-1">
             {game?.players.map((player) => (
               <div key={player.userId} className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div 
-                    className={`w-3 h-3 rounded-full ${player.color === 'white' ? 'bg-white border border-gray-400' : 'bg-black'}`}
+                  <div
+                    className={`w-3 h-3 rounded-full ${player.color === 'white' ? 'bg-[var(--chess-white-piece)] border border-[var(--ui-border)]' : 'bg-[var(--chess-black-piece)]'}`}
                   ></div>
                   <span className={player.userId === user?.id ? 'font-bold' : ''}>
                     {player.username} {player.userId === user?.id ? '(You)' : ''}
                   </span>
                 </div>
                 {game.turn === player.color && !gameOver && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Playing</span>
+                  <span className="text-xs bg-[var(--ui-primary-light)] text-[var(--ui-primary-dark)] px-2 py-1 rounded">Playing</span>
                 )}
               </div>
             ))}
@@ -437,18 +437,18 @@ export default function GamePage() {
       
       {/* Draw offer notification */}
       {showDrawOffer && (
-        <div className="mb-6 bg-yellow-50 p-4 rounded border border-yellow-200 flex justify-between items-center">
+        <div className="mb-6 bg-[var(--notification-bg)] p-4 rounded border border-[var(--notification-border)] flex justify-between items-center">
           <div className="font-medium">Your opponent has offered a draw</div>
           <div className="space-x-2">
             <button
               onClick={() => handleRespondToDraw(true)}
-              className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded"
+              className="bg-[var(--btn-success-bg)] hover:bg-[var(--btn-success-hover)] text-[var(--btn-success-text)] py-1 px-3 rounded"
             >
               Accept
             </button>
             <button
               onClick={() => handleRespondToDraw(false)}
-              className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded"
+              className="bg-[var(--btn-danger-bg)] hover:bg-[var(--btn-danger-hover)] text-[var(--btn-danger-text)] py-1 px-3 rounded"
             >
               Decline
             </button>
@@ -458,7 +458,7 @@ export default function GamePage() {
       
       {/* Draw offer sent notification */}
       {drawOfferedByMe && (
-        <div className="mb-6 bg-blue-50 p-4 rounded border border-blue-200">
+        <div className="mb-6 bg-[var(--ui-info-light)] p-4 rounded border border-[var(--ui-info-border)]">
           <div className="font-medium">You have offered a draw. Waiting for your opponent to respond...</div>
         </div>
       )}
@@ -480,14 +480,14 @@ export default function GamePage() {
               className={`py-2 px-4 rounded ${
                 drawOfferedByMe || !isMyTurn
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                  : 'bg-[var(--btn-warning-bg)] hover:bg-[var(--btn-warning-hover)] text-[var(--btn-warning-text)]'
               }`}
             >
               Offer Draw
             </button>
             <button
               onClick={handleResign}
-              className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
+              className="bg-[var(--btn-danger-bg)] hover:bg-[var(--btn-danger-hover)] text-[var(--btn-danger-text)] py-2 px-4 rounded"
             >
               Resign
             </button>
@@ -495,7 +495,7 @@ export default function GamePage() {
         )}
         <button
           onClick={handleReturnToLobby}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-2 px-4 rounded"
         >
           Return to Lobby
         </button>

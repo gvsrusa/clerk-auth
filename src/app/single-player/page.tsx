@@ -36,8 +36,8 @@ export default function SinglePlayerPage() {
   };
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--ui-hover)] p-4">
+      <div className="bg-[var(--ui-card-bg)] rounded-lg shadow-lg p-8 max-w-md w-full">
         <h1 className="text-3xl font-bold text-center mb-8">Play Against Computer</h1>
         
         {/* Difficulty Selection */}
@@ -48,8 +48,8 @@ export default function SinglePlayerPage() {
               onClick={() => setDifficulty('easy')}
               className={`py-2 px-4 rounded-md ${
                 difficulty === 'easy'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 hover:bg-gray-300'
+                  ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]'
+                  : 'bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]'
               }`}
             >
               Easy
@@ -58,8 +58,8 @@ export default function SinglePlayerPage() {
               onClick={() => setDifficulty('medium')}
               className={`py-2 px-4 rounded-md ${
                 difficulty === 'medium'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 hover:bg-gray-300'
+                  ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]'
+                  : 'bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]'
               }`}
             >
               Medium
@@ -68,8 +68,8 @@ export default function SinglePlayerPage() {
               onClick={() => setDifficulty('hard')}
               className={`py-2 px-4 rounded-md ${
                 difficulty === 'hard'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 hover:bg-gray-300'
+                  ? 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]'
+                  : 'bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover)]'
               }`}
             >
               Hard
@@ -91,10 +91,10 @@ export default function SinglePlayerPage() {
               />
               <div className={`p-4 rounded-md border-2 ${
                 playerColor === 'white'
-                  ? 'border-blue-600'
-                  : 'border-gray-200'
+                  ? 'border-[var(--btn-primary-bg)]'
+                  : 'border-[var(--ui-border)]'
               }`}>
-                <div className="w-12 h-12 bg-white rounded-full shadow border border-gray-300 flex items-center justify-center">
+                <div className="w-12 h-12 bg-white rounded-full shadow border border-[var(--ui-border)] flex items-center justify-center">
                   ♔
                 </div>
                 <span className="block text-center mt-2">White</span>
@@ -111,10 +111,10 @@ export default function SinglePlayerPage() {
               />
               <div className={`p-4 rounded-md border-2 ${
                 playerColor === 'black'
-                  ? 'border-blue-600'
-                  : 'border-gray-200'
+                  ? 'border-[var(--btn-primary-bg)]'
+                  : 'border-[var(--ui-border)]'
               }`}>
-                <div className="w-12 h-12 bg-gray-800 rounded-full shadow border border-gray-300 flex items-center justify-center text-white">
+                <div className="w-12 h-12 bg-[var(--chess-black-piece)] rounded-full shadow border border-[var(--ui-border)] flex items-center justify-center text-white">
                   ♚
                 </div>
                 <span className="block text-center mt-2">Black</span>
@@ -132,7 +132,7 @@ export default function SinglePlayerPage() {
                 type="checkbox"
                 checked={enableHints}
                 onChange={() => setEnableHints(!enableHints)}
-                className="form-checkbox h-5 w-5 text-blue-600 rounded"
+                className="form-checkbox h-5 w-5 text-[var(--btn-primary-bg)] rounded"
               />
               <span>Enable Hints</span>
             </label>
@@ -142,7 +142,7 @@ export default function SinglePlayerPage() {
                 type="checkbox"
                 checked={enableAnalysis}
                 onChange={() => setEnableAnalysis(!enableAnalysis)}
-                className="form-checkbox h-5 w-5 text-blue-600 rounded"
+                className="form-checkbox h-5 w-5 text-[var(--btn-primary-bg)] rounded"
               />
               <span>Enable Position Analysis</span>
             </label>
@@ -152,14 +152,14 @@ export default function SinglePlayerPage() {
         {/* Start Game Button */}
         <button
           onClick={startGame}
-          className="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition duration-200"
+          className="w-full py-3 px-4 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-semibold rounded-lg shadow hover:bg-[var(--btn-primary-hover)] transition duration-200"
         >
           Start Game
         </button>
         
         {/* Return to Homepage */}
         <div className="mt-6 text-center">
-          <Link href="/" className="text-blue-600 hover:underline">
+          <Link href="/" className="text-[var(--status-info)] hover:underline">
             Return to Home
           </Link>
         </div>

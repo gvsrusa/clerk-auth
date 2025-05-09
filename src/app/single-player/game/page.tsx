@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Chess, Move, Square } from 'chess.js';
 import StockfishService, { Difficulty, AnalysisResult } from '@/services/stockfishService';
+import { playSound } from '@/utils/audioUtils';
 import Link from 'next/link';
 
 // Define types
@@ -75,10 +76,10 @@ const ChessSquare = memo(({
       data-testid={`square-${square}`}
       className={`
         flex items-center justify-center
-        ${isDarkSquare ? 'bg-gray-500' : 'bg-gray-200'}
-        ${isSelected ? 'bg-yellow-300' : ''}
-        ${isLegalMove ? 'bg-green-300' : ''}
-        ${isLastMove ? 'bg-blue-200' : ''}
+        ${isDarkSquare ? 'bg-[var(--chess-dark-square)]' : 'bg-[var(--chess-light-square)]'}
+        ${isSelected ? 'bg-[var(--chess-selected)]' : ''}
+        ${isLegalMove ? 'bg-[var(--chess-legal-move)]' : ''}
+        ${isLastMove ? 'bg-[var(--chess-last-move)]' : ''}
         relative
       `}
       style={{ width: '60px', height: '60px' }}
@@ -104,12 +105,12 @@ const ChessSquare = memo(({
       
       {/* Highlight for legal moves */}
       {isLegalMove && !piece && (
-        <div className="w-3 h-3 rounded-full bg-green-500 opacity-70"></div>
+        <div className="w-3 h-3 rounded-full bg-[var(--chess-capture)] opacity-70"></div>
       )}
       
       {/* Highlight for captures */}
       {isLegalMove && piece && (
-        <div className="absolute inset-0 border-2 border-green-500 rounded-sm"></div>
+        <div className="absolute inset-0 border-2 border-[var(--chess-capture)] rounded-sm"></div>
       )}
     </div>
   );
@@ -133,8 +134,8 @@ const SavedGamesModal = memo(({
   if (!isVisible) return null;
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full">
+    <div className="fixed inset-0 bg-[var(--ui-modal-overlay)] flex items-center justify-center p-4 z-50">
+      <div className="bg-[var(--ui-modal-bg)] rounded-lg p-6 max-w-md w-full">
         <h2 className="text-xl font-semibold mb-4">Saved Games</h2>
         
         {savedGames.length === 0 ? (
@@ -144,11 +145,11 @@ const SavedGamesModal = memo(({
             {savedGames.map(game => (
               <div
                 key={game.id}
-                className="p-3 border-b hover:bg-gray-100 cursor-pointer"
+                className="p-3 border-b hover:bg-[var(--ui-hover)] cursor-pointer"
                 onClick={() => onLoadGame(game)}
               >
                 <p className="font-medium">{game.label}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--status-info)]">
                   {game.date.toLocaleDateString()} - {game.date.toLocaleTimeString()}
                 </p>
               </div>
@@ -159,7 +160,7 @@ const SavedGamesModal = memo(({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-4 py-2 bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] rounded hover:bg-[var(--btn-secondary-hover)]"
           >
             Close
           </button>
@@ -212,15 +213,34 @@ export default function SinglePlayerGamePage() {
   const [showSavedGames, setShowSavedGames] = useState(false);
   const [gameSaveMessage, setGameSaveMessage] = useState<string | null>(null);
   
+  // Play sound when a move is made
+  const playMoveSound = useCallback(() => {
+    try {
+      // Use the utility function to play the sound with Web Audio API
+      playSound('/move-sound.mp3').catch((e: Error) => {
+        console.error('Error playing move sound:', e);
+      });
+    } catch (e) {
+      console.error('Error setting up move sound:', e);
+    }
+  }, []);
+
   // Function to make a computer move
   const makeComputerMove = useCallback(async (chessInstance: Chess) => {
-    if (!stockfishServiceRef.current) return;
+    if (!stockfishServiceRef.current) {
+      console.warn('Stockfish service not initialized');
+      return;
+    }
     
     try {
       setIsThinking(true);
       
-      // Get best move from Stockfish
-      const bestMove = await stockfishServiceRef.current.getBestMove(chessInstance.fen());
+      // Get the current FEN position
+      const currentFen = chessInstance.fen();
+      console.log('Getting computer move for position:', currentFen);
+      
+      // Get best move from Stockfish with proper error handling
+      const bestMove = await stockfishServiceRef.current.getBestMove(currentFen);
       
       // Validate we've got a move from stockfish (in UCI format)
       if (bestMove && bestMove.length >= 4) {
@@ -230,25 +250,38 @@ export default function SinglePlayerGamePage() {
         // Check if it's a promotion move
         const promotion = bestMove.length > 4 ? bestMove.substring(4, 5) : undefined;
         
-        // Make the move
-        const moveResult = chessInstance.move({
-          from,
-          to,
-          promotion,
-        });
+        console.log(`Computer moving ${from} to ${to}${promotion ? ' with promotion to ' + promotion : ''}`);
         
-        // Update the game state
-        setGame(new Chess(chessInstance.fen()));
-        
-        // Optional: play a move sound
-        playMoveSound();
+        // Make the move with validation
+        try {
+          const moveResult = chessInstance.move({
+            from,
+            to,
+            promotion,
+          });
+          
+          if (moveResult) {
+            // Update the game state with a new Chess instance to ensure proper state update
+            const newGame = new Chess(chessInstance.fen());
+            setGame(newGame);
+            
+            // Play move sound with error handling
+            playMoveSound();
+          } else {
+            console.error('Invalid computer move:', from, to);
+          }
+        } catch (moveError) {
+          console.error('Error applying computer move:', moveError);
+        }
+      } else {
+        console.error('Invalid or missing best move from Stockfish:', bestMove);
       }
     } catch (error) {
       console.error('Error making computer move:', error);
     } finally {
       setIsThinking(false);
     }
-  }, []);
+  }, [playMoveSound]);
 
   // Initialize the chess game and stockfish engine
   useEffect(() => {
@@ -397,35 +430,7 @@ export default function SinglePlayerGamePage() {
            (playerColor === 'black' && piece.color === 'b');
   };
   
-  // Play sound when a move is made
-  const playMoveSound = useCallback(() => {
-    try {
-      // Create audio with pre-loading to prevent 416 errors
-      const audio = new Audio();
-      
-      // Add event listeners for error handling
-      audio.addEventListener('error', (e) => {
-        console.error('Error loading move sound:', e);
-      });
-      
-      // Set the source after adding event listeners
-      audio.src = '/move-sound.mp3';
-      
-      // Use a timeout to ensure browser is ready to play the sound
-      setTimeout(() => {
-        audio.play().catch(e => {
-          if (e.name === 'AbortError') {
-            // This is often caused by multiple rapid moves
-            console.log('Sound play was aborted, likely due to multiple moves');
-          } else {
-            console.error('Error playing move sound:', e);
-          }
-        });
-      }, 50);
-    } catch (e) {
-      console.error('Error setting up move sound:', e);
-    }
-  }, []);
+  // This function was moved above makeComputerMove
   
   // Get hint from Stockfish
   const getHint = async () => {
@@ -534,66 +539,75 @@ export default function SinglePlayerGamePage() {
     return pieces[`${piece.color}${piece.type}`];
   }, []);
 
+  // Calculate board orientation based on player color
+  const ranks = useMemo(() =>
+    playerColor === 'white' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8],
+    [playerColor]
+  );
+  
+  const files = useMemo(() =>
+    playerColor === 'white' ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'],
+    [playerColor]
+  );
+
+  // Memoize board squares to prevent unnecessary re-renders
+  const squares = useMemo(() => {
+    if (!game) return [];
+    
+    return ranks.flatMap(rank =>
+      files.map(file => {
+        const square = `${file}${rank}` as Square;
+        const rawPiece = game.get(square);
+        // Convert to our expected piece format or null
+        const piece = rawPiece ? {
+          type: rawPiece.type,
+          color: rawPiece.color as 'w' | 'b'
+        } : null;
+        
+        const isSelected = selectedSquare === square;
+        const isLegalMove = legalMoves.includes(square);
+        const isLastMove = gameState.lastMove ?
+          (gameState.lastMove.from === square || gameState.lastMove.to === square) :
+          null;
+        
+        // Determine square color
+        const isDarkSquare = (rank + file.charCodeAt(0)) % 2 === 0;
+        
+        return (
+          <ChessSquare
+            key={square}
+            square={square}
+            piece={piece}
+            isSelected={isSelected}
+            isLegalMove={isLegalMove}
+            isLastMove={isLastMove}
+            isDarkSquare={isDarkSquare}
+            rank={rank}
+            file={file}
+            isFirstInRank={file === files[0]}
+            isLastInFile={rank === ranks[ranks.length - 1]}
+            onClick={handleSquareClick}
+            renderPiece={renderPiece}
+          />
+        );
+      })
+    );
+  }, [game, selectedSquare, legalMoves, gameState.lastMove, files, ranks, handleSquareClick, renderPiece]);
+
   // Render the chessboard
   const renderBoard = useCallback(() => {
     if (!game) return null;
     
-    // Determine the board orientation based on player color
-    const ranks = playerColor === 'white' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
-    const files = playerColor === 'white' ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
-    
-    // Memoize board squares to prevent unnecessary re-renders
-    const squares = useMemo(() => {
-      return ranks.flatMap(rank =>
-        files.map(file => {
-          const square = `${file}${rank}` as Square;
-          const rawPiece = game.get(square);
-          // Convert to our expected piece format or null
-          const piece = rawPiece ? {
-            type: rawPiece.type,
-            color: rawPiece.color as 'w' | 'b'
-          } : null;
-          
-          const isSelected = selectedSquare === square;
-          const isLegalMove = legalMoves.includes(square);
-          const isLastMove = gameState.lastMove ?
-            (gameState.lastMove.from === square || gameState.lastMove.to === square) :
-            null;
-          
-          // Determine square color
-          const isDarkSquare = (rank + file.charCodeAt(0)) % 2 === 0;
-          
-          return (
-            <ChessSquare
-              key={square}
-              square={square}
-              piece={piece}
-              isSelected={isSelected}
-              isLegalMove={isLegalMove}
-              isLastMove={isLastMove}
-              isDarkSquare={isDarkSquare}
-              rank={rank}
-              file={file}
-              isFirstInRank={file === files[0]}
-              isLastInFile={rank === ranks[ranks.length - 1]}
-              onClick={handleSquareClick}
-              renderPiece={renderPiece}
-            />
-          );
-        })
-      );
-    }, [game, selectedSquare, legalMoves, gameState.lastMove, files, ranks, handleSquareClick, renderPiece]);
-    
     return (
       <div
-        className="grid grid-cols-8 border border-gray-800 shadow-lg"
+        className="grid grid-cols-8 border border-[var(--ui-border)] shadow-lg"
         style={{ width: '480px', height: '480px' }}
         data-testid="chessboard"
       >
         {squares}
       </div>
     );
-  }, [game, selectedSquare, legalMoves, gameState.lastMove, playerColor, handleSquareClick, renderPiece]);
+  }, [game, squares]);
   
   // Game status message
   const getStatusMessage = () => {
@@ -648,11 +662,11 @@ export default function SinglePlayerGamePage() {
     render() {
       if (this.state.hasError) {
         return (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+          <div className="p-4 bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error)] rounded-md">
             <h3 className="text-lg font-semibold mb-2">Something went wrong</h3>
             <p className="mb-4">There was an error rendering the chess game.</p>
             <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] px-4 py-2 rounded-md hover:bg-[var(--btn-primary-hover)]"
               onClick={() => this.setState({ hasError: false, error: null })}
             >
               Try again
@@ -667,40 +681,40 @@ export default function SinglePlayerGamePage() {
 
   // Memoize game controls to prevent unnecessary re-renders
   const GameControls = memo(() => (
-    <div className="bg-gray-100 p-4 rounded-lg">
+    <div className="bg-[var(--ui-hover)] p-4 rounded-lg">
       <h2 className="text-xl font-semibold mb-3">Game Controls</h2>
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={newGame}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] px-4 py-2 rounded-md hover:bg-[var(--btn-primary-hover)]"
           disabled={isThinking}
         >
           New Game
         </button>
         <button
           onClick={undoMove}
-          className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+          className="bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] px-4 py-2 rounded-md hover:bg-[var(--btn-secondary-hover)]"
           disabled={gameHistory.length < 2 || isThinking}
         >
           Undo
         </button>
         <button
           onClick={saveGame}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+          className="bg-[var(--btn-success-bg)] text-[var(--btn-success-text)] px-4 py-2 rounded-md hover:bg-[var(--btn-success-hover)]"
           disabled={isThinking}
         >
           Save Game
         </button>
         <button
           onClick={() => setShowSavedGames(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+          className="bg-[var(--btn-success-bg)] text-[var(--btn-success-text)] px-4 py-2 rounded-md hover:bg-[var(--btn-success-hover)]"
           disabled={isThinking}
         >
           Load Game
         </button>
       </div>
       {gameSaveMessage && (
-        <p className="text-green-600 mt-2 text-center">{gameSaveMessage}</p>
+        <p className="text-[var(--status-success)] mt-2 text-center">{gameSaveMessage}</p>
       )}
     </div>
   ));
@@ -708,15 +722,15 @@ export default function SinglePlayerGamePage() {
 
   // Memoize assistance component
   const AssistancePanel = memo(() => (
-    <div className="bg-gray-100 p-4 rounded-lg">
+    <div className="bg-[var(--ui-hover)] p-4 rounded-lg">
       <h2 className="text-xl font-semibold mb-3">Assistance</h2>
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={getHint}
           className={`px-4 py-2 rounded-md ${
             enableHints
-              ? 'bg-purple-600 text-white hover:bg-purple-700'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-[var(--btn-feature-bg)] text-[var(--btn-feature-text)] hover:bg-[var(--btn-feature-hover)]'
+              : 'bg-[var(--btn-disabled-bg)] text-[var(--btn-disabled-text)] cursor-not-allowed'
           }`}
           disabled={!enableHints || isThinking || !isPlayerTurn || gameState.gameOver}
         >
@@ -726,8 +740,8 @@ export default function SinglePlayerGamePage() {
           onClick={analyzePosition}
           className={`px-4 py-2 rounded-md ${
             enableAnalysis
-              ? 'bg-purple-600 text-white hover:bg-purple-700'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-[var(--btn-feature-bg)] text-[var(--btn-feature-text)] hover:bg-[var(--btn-feature-hover)]'
+              : 'bg-[var(--btn-disabled-bg)] text-[var(--btn-disabled-text)] cursor-not-allowed'
           }`}
           disabled={!enableAnalysis || isAnalyzing || gameState.gameOver}
         >
@@ -736,15 +750,15 @@ export default function SinglePlayerGamePage() {
       </div>
       
       {hint && (
-        <div className="mt-3 p-2 bg-white rounded">
+        <div className="mt-3 p-2 bg-[var(--ui-card-bg)] rounded">
           <p>Suggested move: {hint}</p>
         </div>
       )}
       
-      {isAnalyzing && <p className="mt-2 text-blue-600">Analyzing position...</p>}
+      {isAnalyzing && <p className="mt-2 text-[var(--status-info)]">Analyzing position...</p>}
       
       {analysis && (
-        <div className="mt-3 p-2 bg-white rounded">
+        <div className="mt-3 p-2 bg-[var(--ui-card-bg)] rounded">
           <p>Best move: {analysis.bestMove.substring(0, 2)}-{analysis.bestMove.substring(2, 4)}</p>
           <p>Evaluation: {analysis.score > 0 ? '+' : ''}{analysis.score.toFixed(1)}</p>
           {analysis.lines.length > 0 && (
@@ -766,8 +780,8 @@ export default function SinglePlayerGamePage() {
   AssistancePanel.displayName = 'AssistancePanel';
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl w-full">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--ui-hover)] p-4">
+      <div className="bg-[var(--ui-card-bg)] rounded-lg shadow-lg p-6 max-w-4xl w-full">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Game board and info */}
           <div className="flex flex-col">
@@ -791,7 +805,7 @@ export default function SinglePlayerGamePage() {
                 )}
               </div>
               {isThinking && (
-                <p className="text-blue-600">Computer is thinking...</p>
+                <p className="text-[var(--status-info)]">Computer is thinking...</p>
               )}
             </div>
           </div>
@@ -808,13 +822,13 @@ export default function SinglePlayerGamePage() {
             <div className="mt-auto">
               <Link
                 href="/single-player"
-                className="block text-center bg-gray-200 hover:bg-gray-300 py-2 px-4 rounded"
+                className="block text-center bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--btn-secondary-text)] py-2 px-4 rounded"
               >
                 Back to Settings
               </Link>
               <Link
                 href="/"
-                className="block text-center mt-2 text-blue-600 hover:underline"
+                className="block text-center mt-2 text-[var(--status-info)] hover:underline"
               >
                 Return to Home
               </Link>

@@ -160,7 +160,7 @@ export default function MultiplayerPage() {
       <div className="p-6">
         <h1 className="text-3xl font-bold mb-4">Multiplayer Chess</h1>
         <p className="mb-4">You must be signed in to access the multiplayer features.</p>
-        <a href="/sign-in" className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded">
+        <a href="/sign-in" className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-2 px-4 rounded">
           Sign In
         </a>
       </div>
@@ -172,7 +172,7 @@ export default function MultiplayerPage() {
       <h1 className="text-3xl font-bold mb-4">Multiplayer Chess Lobby</h1>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error)] px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
@@ -183,7 +183,7 @@ export default function MultiplayerPage() {
         <div className="flex space-x-3">
           <button
             onClick={handleViewGameHistory}
-            className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded"
+            className="bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--btn-secondary-text)] py-2 px-4 rounded"
           >
             View Game History
           </button>
@@ -191,7 +191,7 @@ export default function MultiplayerPage() {
           {!showCreateForm ? (
             <button
               onClick={() => setShowCreateForm(true)}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
+              className="bg-[var(--btn-success-bg)] hover:bg-[var(--btn-success-hover)] text-[var(--btn-success-text)] py-2 px-4 rounded"
             >
               Create New Game
             </button>
@@ -200,7 +200,7 @@ export default function MultiplayerPage() {
       </div>
       
       {showCreateForm && (
-        <div className="bg-gray-100 p-4 rounded w-full max-w-md mb-6">
+        <div className="bg-[var(--ui-card-bg)] p-4 rounded w-full max-w-md mb-6">
           <h3 className="text-lg font-semibold mb-2">Create New Game</h3>
           <form onSubmit={handleCreateGame}>
             <div className="mb-3">
@@ -208,7 +208,7 @@ export default function MultiplayerPage() {
               <select
                 value={gameType}
                 onChange={(e) => setGameType(e.target.value as 'public' | 'private')}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border border-[var(--ui-border)] rounded bg-[var(--ui-card-bg)]"
               >
                 <option value="public">Public (Anyone can join)</option>
                 <option value="private">Private</option>
@@ -223,7 +223,7 @@ export default function MultiplayerPage() {
                   value={inviteeUsername}
                   onChange={(e) => setInviteeUsername(e.target.value)}
                   placeholder="Enter username"
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border border-[var(--ui-border)] rounded bg-[var(--ui-card-bg)]"
                 />
               </div>
             )}
@@ -231,7 +231,7 @@ export default function MultiplayerPage() {
             <div className="flex space-x-2">
               <button
                 type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded"
+                className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-1 px-3 rounded"
                 disabled={loading}
               >
                 {loading ? 'Creating...' : 'Create Game'}
@@ -239,7 +239,7 @@ export default function MultiplayerPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateForm(false)}
-                className="bg-gray-300 hover:bg-gray-400 text-black py-1 px-3 rounded"
+                className="bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--btn-secondary-text)] py-1 px-3 rounded"
               >
                 Cancel
               </button>
@@ -252,7 +252,7 @@ export default function MultiplayerPage() {
       {userInvitations.length > 0 && (
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">Game Invitations</h2>
-          <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+          <div className="bg-[var(--status-warning-bg)] p-4 rounded border border-[var(--status-warning-border)]">
             <ul className="divide-y">
               {userInvitations.map((invitation, index) => (
                 <li key={index} className="py-3 flex justify-between items-center">
@@ -262,14 +262,14 @@ export default function MultiplayerPage() {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleAcceptInvitation(invitation.gameId, `invitation_${invitation.gameId}`)}
-                      className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+                      className="bg-[var(--btn-success-bg)] hover:bg-[var(--btn-success-hover)] text-[var(--btn-success-text)] py-1 px-3 rounded text-sm"
                       disabled={loading}
                     >
                       Accept
                     </button>
                     <button
                       onClick={() => handleDeclineInvitation(invitation.gameId)}
-                      className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
+                      className="bg-[var(--btn-danger-bg)] hover:bg-[var(--btn-danger-hover)] text-[var(--btn-danger-text)] py-1 px-3 rounded text-sm"
                     >
                       Decline
                     </button>
@@ -288,24 +288,24 @@ export default function MultiplayerPage() {
         {loading && !publicGames.length ? (
           <div className="text-center py-8">Loading games...</div>
         ) : publicGames.length === 0 ? (
-          <div className="bg-gray-100 p-4 rounded text-center">
+          <div className="bg-[var(--ui-card-bg)] p-4 rounded text-center">
             <p>No public games available. Create a new game to get started!</p>
           </div>
         ) : (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {publicGames.map((game) => (
-              <div key={game.id} className="border rounded-lg p-4 bg-white shadow-sm">
+              <div key={game.id} className="border rounded-lg p-4 bg-[var(--ui-card-bg)] shadow-sm">
                 <div className="flex justify-between mb-2">
                   <span className="font-medium">Game #{game.id.substring(5, 10)}</span>
-                  <span className="text-gray-500 text-sm">{game.timeSinceCreation}</span>
+                  <span className="text-[var(--status-info)] text-sm">{game.timeSinceCreation}</span>
                 </div>
                 <div className="mb-2">
-                  <span className="text-gray-600">Created by: </span>
+                  <span className="text-[var(--color-gray-600)]">Created by: </span>
                   <span>{game.players[0]?.username || 'Unknown'}</span>
                 </div>
                 <button
                   onClick={() => handleJoinGame(game.id)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded w-full mt-2"
+                  className="bg-[var(--btn-primary-bg)] hover:bg-[var(--btn-primary-hover)] text-[var(--btn-primary-text)] py-1 px-3 rounded w-full mt-2"
                   disabled={loading}
                 >
                   Join Game
