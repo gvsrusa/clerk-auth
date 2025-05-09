@@ -1,117 +1,364 @@
-# Feature Overview: Multiplayer Chess
+# Multiplayer Chess Mode Feature Specification
 
-## 1. Introduction
-This document outlines the specifications for the multiplayer feature of the web-based chess application. The multiplayer mode will allow registered users to play chess against each other in real-time, fostering an engaging and competitive environment. This feature leverages Clerk for user authentication and will require a WebSocket-based solution for real-time communication.
+## 1. Feature Purpose and Goals
 
-## 2. User Stories
-*   **US1:** As a registered user, I want to create a new multiplayer game so that I can play with a friend or an open opponent.
-*   **US2:** As a registered user, I want to see a list of available public games to join so that I can play against other users.
-*   **US3:** As a registered user, I want to join an existing open public game so that I can start playing immediately.
-*   **US4:** As a registered user, I want to be notified (visually and/or audibly) when it's my turn to make a move so that I don't miss my turn.
-*   **US5:** As a player, I want to see my opponent's moves reflected on my board in real-time (within a few seconds) so that the game feels interactive.
-*   **US6:** As a player, I want to be able to offer a draw to my opponent so that the game can end amicably if neither player has an advantage or if we agree.
-*   **US7:** As a player, I want to be able to accept or decline a draw offer from my opponent so that I have control over the game's outcome.
-*   **US8:** As a player, I want to be able to resign from a game so that I can concede if I believe I will lose or cannot continue.
-*   **US9:** As a player, I want to see the current game status clearly displayed (e.g., check, checkmate, stalemate, draw, whose turn) so that I understand the state of the game.
-*   **US10:** As a registered user, I want to view my past multiplayer game history (opponents, results) so that I can review my performance.
-*   **US11:** As a registered user, I want to invite a specific friend (another registered user identified by username) to a private game so that I can play exclusively with people I know.
+### Primary Purpose
+The Multiplayer Chess Mode provides users with a real-time chess experience against human opponents, enabling players to create, join, and play chess games with friends or random opponents through an intuitive web interface.
 
-## 3. Acceptance Criteria
-*   **AC1 (US1):** A registered user can successfully create a new game (public or private). If public, it appears in a list of available games. If private, a unique game identifier/link is available for sharing or an invitation is sent.
-*   **AC2 (US2):** A registered user can view a filterable/sortable list of public games created by other users that are open to join, showing relevant details (e.g., creator, time since creation).
-*   **AC3 (US3):** A registered user can click a "Join" button on a public game and be successfully added as the opponent, initiating the game.
-*   **AC4 (US4):** The user whose turn it is receives a clear visual notification on the game screen, and an optional subtle sound notification if the window is active.
-*   **AC5 (US5):** When an opponent makes a move, the move is visually updated on the user's board within 2 seconds under normal network conditions.
-*   **AC6 (US6):** A user can click an "Offer Draw" button. The opponent receives a clear, non-intrusive notification of the draw offer. The game continues until the offer is responded to or withdrawn (withdrawal is optional).
-*   **AC7 (US7):** An opponent who has received a draw offer can click "Accept Draw" or "Decline Draw". If accepted, the game ends in a draw. If declined, the game continues.
-*   **AC8 (US8):** A user can click a "Resign" button. The game immediately ends, and the resigning user is marked as the loser, the opponent as the winner.
-*   **AC9 (US9):** The UI accurately and prominently displays game states: "White's Turn", "Black's Turn", "Check!", "Checkmate - White Wins", "Checkmate - Black Wins", "Stalemate - Draw", "Draw by Agreement", "Draw by Resignation (White/Black resigned)".
-*   **AC10 (US10):** A registered user can access a dedicated section showing a list of their completed multiplayer games, including opponent, their color, game result, and date.
-*   **AC11 (US11):** A user can initiate a game by inviting another known registered user (e.g., by username). The invited user receives a notification and can accept or decline the invitation. If accepted, a private game starts between them.
+### Target Users
+- Chess players seeking human opponents online
+- Friends who want to play chess together remotely
+- Chess enthusiasts looking for competitive play
+- Social chess players interested in building an online presence
+- Players of varying skill levels seeking appropriate human competition
 
-## 4. Functional Requirements
-*   **FR1:** User Authentication: Users must be authenticated via Clerk to access multiplayer features.
-*   **FR2:** Game Creation: Ability to create public games (open to anyone) or private games (invite-only).
-*   **FR3:** Game Lobby/Discovery: A system for users to find and join available public games.
-*   **FR4:** Real-time Move Synchronization: Opponent's moves must be transmitted and displayed using WebSockets.
-*   **FR5:** Turn Management: The system must accurately track and indicate whose turn it is.
-*   **FR6:** Game State Logic: Implementation of all standard chess rules, including move validation, check, checkmate, stalemate detection (leveraging `chess.js`).
-*   **FR7:** Draw Offers: Mechanism for players to offer, accept, or decline draws.
-*   **FR8:** Resignation: Mechanism for players to resign from a game.
-*   **FR9:** Game History: Storage and retrieval of completed multiplayer game records for each user.
-*   **FR10:** Invitation System: Ability for users to invite specific other registered users to a game.
-*   **FR11:** Connection Handling: Basic handling for disconnections (e.g., opponent disconnected message, game might be forfeit after a timeout or allow reconnection within a short window - TBD).
+### Key User Experience Goals
+- Provide a seamless, real-time chess experience with minimal latency
+- Enable straightforward game creation and intuitive opponent matching
+- Support both public games and private invitations for targeted play
+- Ensure transparent game state synchronization across devices
+- Implement standard chess conventions (draws, resignations, etc.)
+- Create a responsive, accessible interface that works across devices
+- Integrate with authentication to support persistent user identities
+- Maintain game history for review and analysis
 
-## 5. Non-Functional Requirements
-*   **NFR1: Performance:** Move transmission and board updates should occur with latency < 2 seconds. Lobby loading should be quick.
-*   **NFR2: Scalability:** The system architecture should support at least 100 concurrent active games initially, with a path to scale further.
-*   **NFR3: Reliability:** Game state must be persisted robustly. Minimize chances of game state corruption due to server or client issues. Reconnection to ongoing games should be supported if feasible.
-*   **NFR4: Security:** All communication, especially game moves and user actions, must be secure. Authentication handled by Clerk. No unauthorized game manipulation.
-*   **NFR5: Usability:** The interface for creating, joining, and playing games must be intuitive and user-friendly. Notifications should be clear and non-obtrusive.
+## 2. Functional Requirements
 
-## 6. Scope
-### In-Scope (for initial MVP):
-*   1v1 multiplayer chess games between two registered users.
-*   Real-time move synchronization.
-*   Game creation (public and private invite-based).
-*   Lobby for public games.
-*   Standard game controls: making moves, offering draw, accepting/declining draw, resigning.
-*   Basic turn notifications within the game UI.
-*   Enforcement of standard chess rules.
-*   Display of game status (check, checkmate, stalemate, turn).
-*   User-to-user invitation for private games.
-*   Viewing personal multiplayer game history (list of games, opponents, results).
+### Core Gameplay Functionality
+- Real-time chess board with standard chess rules enforcement
+- Turn-based gameplay with automatic turn switching
+- Visual highlighting of selected pieces and legal moves
+- Move validation according to chess rules
+- Check, checkmate, stalemate, and draw detection
+- Game state tracking (current position, move history)
+- Board visualization oriented to the player's assigned color
+- Real-time synchronization of moves between players
+- Game persistence across sessions and reconnection support
 
-### Out-of-Scope (for initial MVP, potential future enhancements):
-*   Player ratings, ELO system, or leaderboards.
-*   Tournament modes or organized play events.
-*   Spectator mode for ongoing games.
-*   In-game chat functionality (text or voice).
-*   Advanced time controls (e.g., blitz, rapid, classical with increments). Default to untimed or a single simple time control.
-*   Rematch functionality directly after a game ends.
-*   Analysis board post-game.
-*   Guest play (non-registered users).
-*   Notifications outside the application (e.g., email, push).
+### Multiplayer Lobby
+- Public game listing with available games
+- Game creation interface with public/private options
+- Game joining functionality for public games
+- Private game invitations with username-based invites
+- Active games tracking with current status
+- Game history access for completed games
+- Authentication integration for user identification
+- Real-time updates of game listings and status changes
 
-## 7. Dependencies
-### Internal:
-*   **User Authentication System:** Clerk (existing integration).
-*   **Frontend Framework:** Next.js (project stack).
-*   **Chess Logic Library:** `chess.js` (for move validation, game state).
-*   **UI Components:** To be built using Next.js/React.
+### Game Creation and Joining
+- Public game creation with creator assigned white pieces
+- Private game creation with specific user invitations
+- Game visibility controls (public vs. private)
+- Automatic assignment of colors (creator gets white, joiner gets black)
+- Matchmaking system for connecting players
+- Waiting room for creator while awaiting opponent
+- Game starting upon opponent joining
+- Real-time notifications of game creation and joining events
 
-### External/Services:
-*   **WebSocket Server/Service:** Required for real-time communication. (Currently a "stub", needs implementation or selection of a managed service).
-*   **Database:** For storing user game history, active game states (if not fully in-memory with WebSocket state).
+### Real-time Game Interactions
+- Move synchronization between players
+- Turn notifications with visual and audio feedback
+- Draw offering mechanism with accept/decline options
+- Resignation functionality for conceding games
+- Game status updates (check, checkmate, draw, etc.)
+- Player disconnection handling and reconnection support
+- Game completion with outcome recording
+- Error handling for invalid moves or illegal actions
 
-## 8. UI/UX Considerations
-*   **Clarity:** Clear visual indication of whose turn it is, game status, and opponent's last move.
-*   **Responsiveness:** Board interactions and move feedback should feel immediate.
-*   **Notifications:** Game invites, turn changes, draw offers, and game end states should be communicated clearly and promptly without being overly intrusive.
-*   **Lobby/Game List:** Easy to scan and join public games. Clear distinction between public and private games.
-*   **Invitation Flow:** Intuitive process for sending and receiving game invitations.
-*   **Error Handling:** Graceful display of errors (e.g., network issues, invalid moves though `chess.js` should prevent most).
+### Game History and Review
+- Record of completed games in player history
+- Game outcome tracking (win, loss, draw)
+- Player information display (usernames, colors)
+- Game date and result information
+- Listing of games played by the user
+- Filtering and sorting of historical games
+- Access to basic game information
 
-## 9. High-Level API/WebSocket Events
-*(Illustrative, actual event names and payloads TBD)*
+## 3. Technical Implementation Details
 
-### Client -> Server:
-*   `user:authenticate { token }` (handled by Clerk session, WebSocket connection might need auth handshake)
-*   `game:create { isPrivate: boolean, invitedUserId?: string }`
-*   `game:join { gameId: string }`
-*   `game:move { gameId: string, move: { from: string, to: string, promotion?: string } }` (using SAN or from/to)
-*   `game:offerDraw { gameId: string }`
-*   `game:respondDraw { gameId: string, accepted: boolean }`
-*   `game:resign { gameId: string }`
-*   `user:inviteToGame { targetUserId: string }` (could also be part of `game:create`)
+### Component Architecture
+1. **GameService (src/services/gameService.ts)**
+   - Core service for managing multiplayer game state
+   - Handles game creation, joining, and state updates
+   - Manages player interactions (moves, draw offers, resignations)
+   - Implements game history tracking and retrieval
+   - Provides WebSocket communication facilities
+   - Defines game data structures and interfaces
+   - Handles state synchronization between clients
 
-### Server -> Client(s) (broadcast to game participants or specific users):
-*   `game:created { gameId: string, gameState: object, players: object[], isPrivate: boolean }`
-*   `game:playerJoined { gameId: string, userId: string, gameState: object }`
-*   `game:updated { gameId: string, gameState: object, lastMove: object, currentPlayer: string }` (after a valid move)
-*   `game:drawOffered { gameId: string, offeringUserId: string }`
-*   `game:drawResponded { gameId: string, respondingUserId: string, accepted: boolean, gameState: object }`
-*   `game:ended { gameId: string, reason: string (checkmate | stalemate | resign | draw_agreed), winner?: string, gameState: object }`
-*   `user:invitedToGame { gameId: string, invitingUserName: string }`
-*   `error:general { message: string, details?: object }`
-*   `lobby:gamesListUpdated { games: object[] }` (for users in the lobby)
+2. **WebSocket Server (src/server.js)**
+   - Socket.IO server for real-time communication
+   - Manages active connections and user sessions
+   - Broadcasts game events to appropriate clients
+   - Maintains connection state and handles reconnections
+   - Processes game-related events (creation, moves, etc.)
+   - Implements event validation and security measures
+   - Ensures proper routing of messages between players
+
+3. **Multiplayer Lobby UI (src/app/multiplayer/page.tsx)**
+   - Renders available public games and game creation interface
+   - Handles user interactions for creating and joining games
+   - Manages private game invitations
+   - Processes real-time lobby updates
+   - Provides navigation to active games and game history
+   - Integrates with authentication to ensure user identification
+   - Displays error messages and loading states
+
+4. **Game Board UI (src/app/multiplayer/game/[gameId]/page.tsx)**
+   - Renders the interactive chessboard for real-time play
+   - Processes user interactions for piece selection and movement
+   - Displays game status and player information
+   - Manages turn indicators and notifications
+   - Handles draw offers and resignations
+   - Provides navigation back to lobby
+   - Implements special move patterns (castling, en passant, promotion)
+
+5. **Game History UI (src/app/multiplayer/history/page.tsx)**
+   - Displays list of completed games for the current user
+   - Shows game outcomes, opponents, and dates
+   - Provides filtering and sorting functionality
+   - Links to detailed game information
+
+6. **Authentication Middleware (src/middleware.ts)**
+   - Protects multiplayer routes with Clerk authentication
+   - Ensures only authenticated users can access multiplayer features
+   - Redirects unauthenticated users to sign-in
+
+### Key Services and Responsibilities
+
+**GameService:**
+- Manages game state and player information
+- Handles game creation with appropriate settings
+- Processes game joins and player assignments
+- Validates and executes chess moves
+- Implements game rules and win conditions
+- Manages special game actions (draw offers, resignations)
+- Tracks game history and outcomes
+- Provides WebSocket connectivity for real-time updates
+
+**WebSocket Server:**
+- Establishes and maintains client connections
+- Routes events between appropriate clients
+- Broadcasts game state updates
+- Handles player reconnections gracefully
+- Manages game rooms for targeted communication
+- Provides security and validation of incoming events
+- Updates lobby state for all connected clients
+
+**Chess.js Library:**
+- Enforces chess rules and validates moves
+- Tracks game state and move history
+- Detects special conditions (check, checkmate, etc.)
+- Generates legal moves for selected pieces
+- Provides standard chess notation support
+
+### Data Flow and State Management
+
+1. **Game Creation Flow:**
+   - User selects game type (public/private) in lobby
+   - For private games, the user enters invitee username
+   - GameService creates a new game with the creator as white
+   - The game is stored and broadcast to the lobby (if public)
+   - For private games, an invitation is sent to the invitee
+   - Creator is redirected to the game page to wait for opponent
+
+2. **Game Joining Flow:**
+   - User views available public games in lobby
+   - User selects a game to join
+   - GameService adds the user as black to the selected game
+   - The game state is updated to 'active'
+   - Both players are synchronized to the game page
+   - The initial chess board is displayed to both players
+
+3. **Move Execution Flow:**
+   - Current player selects a piece, legal moves are displayed
+   - Player selects destination square for the move
+   - Move is validated and sent to the server
+   - Server verifies the move and updates game state
+   - Updated game state is broadcast to both players
+   - Next player's turn is activated
+   - Game checks for special conditions (check, checkmate, etc.)
+
+4. **Draw Offer Flow:**
+   - Player sends draw offer via UI
+   - Server records offer and notifies opponent
+   - Opponent receives notification and responds (accept/decline)
+   - If accepted, game ends as a draw and is recorded in history
+   - If declined, game continues and offer is cleared
+
+5. **Resignation Flow:**
+   - Player selects resign option
+   - Confirmation is requested and provided
+   - Server records resignation and updates game state
+   - Both players are notified of the outcome
+   - Game ends with the opponent as winner
+   - Result is recorded in game history
+
+6. **State Management:**
+   - Core game state maintained in GameService
+   - Real-time state synchronized via WebSocket
+   - UI components react to state changes from server
+   - Chess position managed by Chess.js instance
+   - Game history stored for completed games
+   - WebSocket handles reconnection and state resynchronization
+
+### WebSocket Integration
+
+- Client-server communication via Socket.IO
+- Real-time event transmission between players
+- Event types include:
+  - `lobby:gamesListUpdated`: Updates to available games list
+  - `user:invitedToGame`: Notification of game invitation
+  - `game:playerJoined`: Alert when an opponent joins
+  - `game:updated`: Updates to game state (moves, etc.)
+  - `game:drawOffered`: Notification of draw offer
+  - `game:drawResponded`: Response to draw offer
+  - `game:ended`: Game completion notification
+- Connection management with automatic reconnection
+- Room-based messaging for targeted communication
+- Error handling and fallback mechanisms
+
+### Performance Considerations
+
+- Efficient game state transmission with minimal payload size
+- Optimized rendering using React components
+- WebSocket connection management to reduce overhead
+- Real-time synchronization with minimal latency
+- Error boundaries to prevent component failures
+- Reconnection logic to handle network interruptions
+- Proper cleanup of connections and resources
+
+## 4. User Interface Requirements
+
+### Multiplayer Lobby
+
+- Clear title and navigation elements
+- List of available public games with:
+  - Creator's username
+  - Creation time (relative format)
+  - Join button
+- Game creation form with:
+  - Game type selection (public/private)
+  - Invitee username field (for private games)
+  - Create button with loading state
+- Game invitations section with:
+  - Inviter's username
+  - Accept/decline buttons
+- Navigation to game history
+- Authentication status and user information
+- Loading states for asynchronous operations
+- Error messages for failed operations
+
+### Game Board Interface
+
+- 8x8 chess board with alternating light and dark squares
+- Chess pieces represented with Unicode symbols
+- Player information display with usernames and colors
+- Current turn indicator showing whose turn it is
+- Game status display (active, check, checkmate, etc.)
+- Move highlighting showing:
+  - Selected piece (highlighted square)
+  - Legal moves (highlighted destination squares)
+  - Last move made (source and destination highlight)
+- Draw offer notification with accept/decline options
+- Game control buttons:
+  - Offer Draw button
+  - Resign button
+  - Return to Lobby button
+- Audio feedback for moves and turn changes
+- Responsive layout adjusting to screen size
+
+### Game History Interface
+
+- List of completed games showing:
+  - Opponent's username
+  - Player's assigned color
+  - Game result (won, lost, draw)
+  - Date of play
+- Filtering options for game outcomes
+- Sorting options by date or result
+- Navigation to return to lobby
+- Empty state for no completed games
+- Loading state during data retrieval
+- Error handling for failed data loading
+
+## 5. Dependencies and Interactions
+
+### Dependencies on Shared Components
+
+- ErrorBoundary component for handling rendering errors
+- React and Next.js framework components
+- Chess.js for chess logic and rules enforcement
+- Socket.IO for real-time communication
+- Tailwind CSS for styling
+
+### Integration with Authentication System
+
+- Clerk.js for user authentication and identity management
+- Authentication required for all multiplayer features
+- User information retrieval for display and game association
+- Authentication middleware for route protection
+- User ID as unique identifier for players
+
+### API Interactions
+
+- WebSocket server for real-time data exchange
+- RESTful API endpoints for non-real-time operations
+- Authentication token handling for secure communication
+- Error handling and retry mechanisms
+
+### Integration with Application Navigation
+
+- Links between lobby, game board, and history views
+- Navigation from home page to multiplayer section
+- Protected routes requiring authentication
+- Redirection for unauthenticated users
+- Deep linking to specific games via URL
+
+## 6. Potential Extensions and Enhancements
+
+### Possible Future Improvements
+
+- Chat functionality between players during games
+- Spectator mode for observing ongoing games
+- Enhanced game history with move-by-move replay
+- Time controls with various time settings
+- Rating system for competitive play
+- Tournaments and scheduled matches
+- Friend lists and social features
+- Customizable themes and board styles
+- Advanced statistics and performance metrics
+- Opening book integration for analysis
+- Mobile app version with push notifications
+- Offline move submission for asynchronous play
+
+### Scalability Considerations
+
+- Database integration for permanent game storage
+- Improved WebSocket architecture for high concurrency
+- Rate limiting and abuse prevention
+- Enhanced security measures
+- Caching strategies for frequently accessed data
+- Load balancing for distributed deployment
+- Monitoring and logging infrastructure
+- Performance optimization for mobile devices
+- Progressive Web App capabilities for offline access
+
+## 7. Acceptance Criteria
+
+The Multiplayer Chess Mode will be considered complete when:
+
+1. Players can create both public and private games with appropriate settings
+2. Games are visible in the lobby and can be joined by other players
+3. Private game invitations are delivered and can be accepted/declined
+4. The chess board correctly displays and follows standard chess rules
+5. Moves are properly synchronized between players in real-time
+6. Players receive clear turn notifications and game status updates
+7. Draw offers can be made, received, and responded to
+8. Players can resign games when desired
+9. Completed games are recorded and visible in game history
+10. All components handle errors gracefully and provide appropriate feedback
+11. Authentication is properly integrated to protect multiplayer features
+12. Reconnection works correctly if a player temporarily disconnects
+13. The interface is responsive and works across supported devices
+14. WebSocket communication is secure and efficient
