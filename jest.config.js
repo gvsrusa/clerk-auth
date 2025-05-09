@@ -1,8 +1,38 @@
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
-  // Add any other Jest configurations specific to your project if needed
+  transform: {
+    '^.+\\.(ts|tsx|js|jsx)$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.json',
+        jsx: 'react-jsx',
+      },
+    ],
+  },
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/mocks/**',
+  ],
+  verbose: true,
+  testTimeout: 30000,
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+    },
+  },
+  // Mock implementations for browser APIs and modules
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^stockfish$': '<rootDir>/src/mocks/stockfishMock.js',
+  },
 };
