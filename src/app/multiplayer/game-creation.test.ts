@@ -35,23 +35,29 @@ jest.mock('@clerk/nextjs/server', () => {
   };
 });
 
-// Define the actual mock function instance(s) for GameService methods at the top level.
-// This ensures they are initialized before the jest.mock factory function runs.
-const mockCreatePublicGame = jest.fn();
-// If GameService had other methods to mock for this file, define their mocks here:
-// const mockAnotherGameServiceMethod = jest.fn();
+// Mock GameService
+// IMPORTANT: We need to declare the variables before jest.mock but
+// initialize them after to avoid hoisting issues in Jest
+let mockCreatePublicGame: jest.Mock;
+// If GameService had other methods to mock for this file, declare them here:
+// let mockAnotherGameServiceMethod;
 
 // Mock the GameService module.
-// The factory function will now use the top-level mock functions defined above.
 jest.mock('../../services/gameService', () => {
   return {
     GameService: {
-      createPublicGame: mockCreatePublicGame, // Use the top-level mock function
-      // Map other GameService methods to their respective top-level mocks if needed:
-      // anotherMethod: mockAnotherGameServiceMethod,
+      // Use a getter to access the mock that will be initialized after jest.mock
+      get createPublicGame() { return mockCreatePublicGame; },
+      // Other methods would follow the same pattern:
+      // get anotherMethod() { return mockAnotherGameServiceMethod; }
     },
   };
 });
+
+// Initialize the mocks after jest.mock
+mockCreatePublicGame = jest.fn();
+// Initialize other mocks if needed:
+// mockAnotherGameServiceMethod = jest.fn();
 
 describe('Multiplayer Feature: Game Creation (US1, AC1, FR2)', () => {
   let mockRequest: NextRequest;

@@ -22,28 +22,23 @@ interface GameServiceLobbyMocks {
 
 // 1. Initialize an object containing the actual mock functions.
 // This object and its mock functions are created before Jest's mock factory for GameService is called.
-const gameServiceMockFunctions: GameServiceLobbyMocks = {
-  getPublicGames: jest.fn(),
-  // Add other actual mocks here if GameServiceLobbyMocks expands
-};
+// Mock GameService
+// IMPORTANT: We need to declare the variables before jest.mock but
+// initialize them after to avoid hoisting issues in Jest
+let mockGetPublicGames: jest.Mock;
 
-// 2. Mock the GameService module.
-// The factory function will reference the already-initialized mocks in gameServiceMockFunctions.
+// Mock the GameService module
 jest.mock('../../services/gameService', () => {
-  // This factory function provides the mock for the entire 'gameService' module.
-  // We are assuming GameService is a class that gets instantiated (e.g., new GameService()).
-  // Therefore, we mock the GameService constructor to return an object (the instance)
-  // which has methods that are our pre-defined jest.fn() mocks.
   return {
-    GameService: jest.fn().mockImplementation(() => {
-      return {
-        // This ensures that when an instance of GameService is created and its
-        // getPublicGames method is called, it uses our specific mock function.
-        getPublicGames: gameServiceMockFunctions.getPublicGames,
-      };
-    }),
+    GameService: {
+      // This will be initialized after the mock setup
+      get getPublicGames() { return mockGetPublicGames; }
+    },
   };
 });
+
+// Initialize the mock after jest.mock
+mockGetPublicGames = jest.fn();
 
 
 describe('Multiplayer Feature: Game Lobby and Discovery (US2, AC2, FR3) - API Tests', () => {
@@ -56,9 +51,8 @@ describe('Multiplayer Feature: Game Lobby and Discovery (US2, AC2, FR3) - API Te
         userId: mockUserIdForGetAuth
     }));
     
-    if (gameServiceMockFunctions && gameServiceMockFunctions.getPublicGames) {
-      gameServiceMockFunctions.getPublicGames.mockClear();
-    }
+    // Clear the mock for GameService.getPublicGames
+    mockGetPublicGames.mockClear();
   });
 
   describe('LOBBY_001 & LOBBY_004 (details): View list of available public games', () => {
@@ -68,14 +62,14 @@ describe('Multiplayer Feature: Game Lobby and Discovery (US2, AC2, FR3) - API Te
         { gameId: 'game1', createdBy: 'playerA', timeSinceCreation: '5 mins ago', status: 'open' },
         { gameId: 'game2', createdBy: 'playerB', timeSinceCreation: '10 mins ago', status: 'open' },
       ];
-      gameServiceMockFunctions.getPublicGames.mockResolvedValue(mockGames);
+      mockGetPublicGames.mockResolvedValue(mockGames);
 
       mockRequest = new NextRequest(new URL('/api/multiplayer/games', 'http://localhost'));
       const response = await getGamesApiHandler(mockRequest);
       const responseBody = await response.json();
 
       expect(jest.requireMock('@clerk/nextjs/server').getAuth).toHaveBeenCalledTimes(1);
-      expect(gameServiceMockFunctions.getPublicGames).toHaveBeenCalledTimes(1);
+      expect(mockGetPublicGames).toHaveBeenCalledTimes(1);
       expect(response.status).toBe(200);
       expect(responseBody).toEqual(mockGames);
     });
@@ -87,7 +81,7 @@ describe('Multiplayer Feature: Game Lobby and Discovery (US2, AC2, FR3) - API Te
       const response = await getGamesApiHandler(mockRequest);
       
       expect(jest.requireMock('@clerk/nextjs/server').getAuth).toHaveBeenCalledTimes(1);
-      expect(gameServiceMockFunctions.getPublicGames).not.toHaveBeenCalled();
+      expect(mockGetPublicGames).not.toHaveBeenCalled();
       expect(response.status).toBe(401);
     });
   });
@@ -96,14 +90,14 @@ describe('Multiplayer Feature: Game Lobby and Discovery (US2, AC2, FR3) - API Te
     it('should return an empty list if user is authenticated and no public games exist', async () => {
       mockUserIdForGetAuth = 'user_lobby_viewer_456';
       const mockEmptyGamesList: any[] = [];
-      gameServiceMockFunctions.getPublicGames.mockResolvedValue(mockEmptyGamesList);
+      mockGetPublicGames.mockResolvedValue(mockEmptyGamesList);
 
       mockRequest = new NextRequest(new URL('/api/multiplayer/games', 'http://localhost'));
       const response = await getGamesApiHandler(mockRequest);
       const responseBody = await response.json();
 
       expect(jest.requireMock('@clerk/nextjs/server').getAuth).toHaveBeenCalledTimes(1);
-      expect(gameServiceMockFunctions.getPublicGames).toHaveBeenCalledTimes(1);
+      expect(mockGetPublicGames).toHaveBeenCalledTimes(1);
       expect(response.status).toBe(200);
       expect(responseBody).toEqual(mockEmptyGamesList);
     });
